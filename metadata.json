@@ -1,0 +1,6 @@
+{
+  "name": "Kampüs Koç - YKS Öğrenci ve Koçluk Yönetim Platformu",
+  "description": "Çoklu kurum (multi-tenant) destekli, YKS öğrenci, koçluk ve kurum yönetim web platformu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,211 @@
+{
+  "entities": {
+    "Organization": {
+      "title": "Organization",
+      "description": "Multi-tenant educational institution or school.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "address": { "type": "string" },
+        "managerName": { "type": "string" },
+        "managerEmail": { "type": "string", "format": "email" },
+        "isActive": { "type": "boolean" },
+        "studentCount": { "type": "number" },
+        "coachCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["code", "name", "isActive"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account for student, coach, org_admin, or super_admin.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["super_admin", "org_admin", "coach", "student"] },
+        "organizationId": { "type": "string" },
+        "phone": { "type": "string" },
+        "title": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "grade": { "type": "string", "enum": ["11", "12", "Mezun"] },
+        "field": { "type": "string", "enum": ["Sayısal", "Eşit Ağırlık", "Sözel", "Dil"] },
+        "targetUniversity": { "type": "string" },
+        "targetDepartment": { "type": "string" },
+        "targetScore": { "type": "number" },
+        "targetRank": { "type": "number" },
+        "dailyQuestionGoal": { "type": "number" },
+        "weeklyStudyGoalHours": { "type": "number" },
+        "coachId": { "type": "string" },
+        "coachName": { "type": "string" },
+        "classId": { "type": "string" },
+        "className": { "type": "string" },
+        "assignedStudentIds": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "name", "role", "isActive"]
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "Student trial exam results and net scores for TYT, AYT, YDT.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentField": { "type": "string" },
+        "examName": { "type": "string" },
+        "examType": { "type": "string", "enum": ["TYT", "AYT", "YDT", "TYT_AYT"] },
+        "examDate": { "type": "string" },
+        "languageChoice": { "type": "string" },
+        "scores": { "type": "object" },
+        "totalTytNet": { "type": "number" },
+        "totalAytNet": { "type": "number" },
+        "totalYdtNet": { "type": "number" },
+        "totalNet": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizationId", "studentId", "examName", "examType", "examDate", "totalNet"]
+    },
+    "StudyProgram": {
+      "title": "StudyProgram",
+      "description": "Weekly study program item assigned to a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "coachId": { "type": "string" },
+        "coachName": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "targetQuestions": { "type": "number" },
+        "estimatedMinutes": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "completed", "missed"] },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizationId", "studentId", "date", "subject", "topic", "status"]
+    },
+    "StudyRecord": {
+      "title": "StudyRecord",
+      "description": "Daily self-recorded study sessions, question counts and durations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "date": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "solvedQuestions": { "type": "number" },
+        "correctCount": { "type": "number" },
+        "wrongCount": { "type": "number" },
+        "durationMinutes": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizationId", "studentId", "date", "subject", "solvedQuestions"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Specific assignment given to a student by their coach.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "coachId": { "type": "string" },
+        "coachName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "targetQuestions": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizationId", "studentId", "title", "dueDate", "status"]
+    },
+    "MissingTopic": {
+      "title": "MissingTopic",
+      "description": "Weak/missing topic tracked by student or coach.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "urgency": { "type": "string", "enum": ["high", "medium", "low"] },
+        "isResolved": { "type": "boolean" },
+        "addedBy": { "type": "string", "enum": ["coach", "student"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizationId", "studentId", "subject", "topic", "urgency", "isResolved"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "Class/branch in an educational institution.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "name": { "type": "string" },
+        "field": { "type": "string", "enum": ["Sayısal", "Eşit Ağırlık", "Sözel", "Dil"] },
+        "studentCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizationId", "name", "field"]
+    }
+  },
+  "firestore": {
+    "/organizations/{orgId}": {
+      "schema": "Organization",
+      "description": "Multi-tenant institution data."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles partitioned by role and organization."
+    },
+    "/examResults/{examId}": {
+      "schema": "ExamResult",
+      "description": "Student trial exam records and calculated nets."
+    },
+    "/studyPrograms/{programId}": {
+      "schema": "StudyProgram",
+      "description": "Assigned weekly study programs."
+    },
+    "/studyRecords/{recordId}": {
+      "schema": "StudyRecord",
+      "description": "Student daily study entries."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Coach-assigned student tasks."
+    },
+    "/missingTopics/{topicId}": {
+      "schema": "MissingTopic",
+      "description": "Tracked missing topics with urgency badges."
+    },
+    "/classes/{classId}": {
+      "schema": "Class",
+      "description": "Institution classes and branches."
+    }
+  }
+}

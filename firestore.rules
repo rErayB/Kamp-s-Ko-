@@ -1,0 +1,213 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Safe Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function hasUserData() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return hasUserData() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data : {};
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        (hasUserData() && getUserData().get('role', '') == 'super_admin') || 
+        (request.auth.token.get('email', '') == 'r.eraybiral@gmail.com')
+      );
+    }
+    
+    function isOrgAdmin(orgId) {
+      return isAuthenticated() && (
+        isSuperAdmin() || 
+        (hasUserData() && getUserData().get('role', '') == 'org_admin' && getUserData().get('organizationId', '') == orgId)
+      );
+    }
+    
+    function isCoach(orgId) {
+      return isAuthenticated() && (
+        isOrgAdmin(orgId) || 
+        (hasUserData() && getUserData().get('role', '') == 'coach' && getUserData().get('organizationId', '') == orgId)
+      );
+    }
+
+    function isMemberOfOrg(orgId) {
+      return isAuthenticated() && (
+        isSuperAdmin() || 
+        (hasUserData() && getUserData().get('organizationId', '') == orgId)
+      );
+    }
+
+    // Default catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Organizations: Public read for code lookup (login/registration check), admin write or initial bootstrap
+    match /organizations/{orgId} {
+      allow read: if true;
+      allow create: if isSuperAdmin() || !exists(/databases/$(database)/documents/organizations/{orgId});
+      allow update, delete: if isSuperAdmin() || isOrgAdmin(orgId);
+    }
+
+    // Users: Students can only view their own profile, coaches and admins can view members of their organization
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isSuperAdmin() ||
+        (hasUserData() && getUserData().get('role', '') in ['org_admin', 'coach'] && getUserData().get('organizationId', '') == resource.data.get('organizationId', ''))
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isSuperAdmin() ||
+        isOrgAdmin(request.resource.data.get('organizationId', ''))
+      );
+      allow update: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isSuperAdmin() || 
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+      allow delete: if isSuperAdmin() || isOrgAdmin(resource.data.get('organizationId', ''));
+    }
+
+    // Classes
+    match /classes/{classId} {
+      allow read: if isAuthenticated() && isMemberOfOrg(resource.data.get('organizationId', ''));
+      allow create: if isSuperAdmin() || !exists(/databases/$(database)/documents/classes/{classId}) || (isAuthenticated() && isOrgAdmin(request.resource.data.get('organizationId', '')));
+      allow update, delete: if isAuthenticated() && isOrgAdmin(resource.data.get('organizationId', ''));
+    }
+
+    // Exam Results (Denemeler)
+    match /examResults/{examId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() || 
+        (resource.data.studentId == request.auth.uid) ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.studentId == request.auth.uid ||
+        isCoach(request.resource.data.get('organizationId', '')) ||
+        isOrgAdmin(request.resource.data.get('organizationId', ''))
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+    }
+
+    // Study Programs (Çalışma Programı)
+    match /studyPrograms/{programId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() || 
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+      allow create: if isAuthenticated() && (
+        isCoach(request.resource.data.get('organizationId', '')) ||
+        isOrgAdmin(request.resource.data.get('organizationId', '')) ||
+        request.resource.data.studentId == request.auth.uid
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+    }
+
+    // Study Records (Günlük Çalışma Kaydı)
+    match /studyRecords/{recordId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() || 
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.studentId == request.auth.uid ||
+        isCoach(request.resource.data.get('organizationId', ''))
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+    }
+
+    // Tasks (Görevler)
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() || 
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+      allow create: if isAuthenticated() && (
+        isCoach(request.resource.data.get('organizationId', '')) ||
+        isOrgAdmin(request.resource.data.get('organizationId', ''))
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+    }
+
+    // Missing Topics (Eksik Konular)
+    match /missingTopics/{topicId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() || 
+        resource.data.studentId == request.auth.uid ||
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', ''))
+      );
+      allow create, update, delete: if isAuthenticated() && (
+        resource == null ? (
+          request.resource.data.studentId == request.auth.uid || 
+          isCoach(request.resource.data.get('organizationId', ''))
+        ) : (
+          resource.data.studentId == request.auth.uid ||
+          isCoach(resource.data.get('organizationId', '')) ||
+          isOrgAdmin(resource.data.get('organizationId', ''))
+        )
+      );
+    }
+
+    // Coach Notes (Koç Notları)
+    match /coachNotes/{noteId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() || 
+        isCoach(resource.data.get('organizationId', '')) ||
+        isOrgAdmin(resource.data.get('organizationId', '')) ||
+        (resource.data.studentId == request.auth.uid && resource.data.get('isPrivate', false) == false)
+      );
+      allow create, update, delete: if isAuthenticated() && (
+        isCoach(request.resource.data.get('organizationId', '')) ||
+        isOrgAdmin(request.resource.data.get('organizationId', ''))
+      );
+    }
+
+    // Announcements (Duyurular)
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated() && isMemberOfOrg(resource.data.get('organizationId', ''));
+      allow create, update, delete: if isAuthenticated() && isOrgAdmin(request.resource.data.get('organizationId', ''));
+    }
+
+    // Notifications (Bildirimler)
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        isSuperAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
